@@ -8,6 +8,7 @@
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=ppanchen_NetSdrClient&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=ppanchen_NetSdrClient)
 
 
+
 # SonarCloud CI setup for `ppanchen/NetSdrClient`
 
 This folder contains a minimal **GitHub Actions + SonarCloud** setup tailored to your repo.
