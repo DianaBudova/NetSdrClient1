@@ -15,7 +15,6 @@ public class EchoServer
     private TcpListener _listener;
     private CancellationTokenSource _cancellationTokenSource;
 
-
     public EchoServer(int port)
     {
         _port = port;
