@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using NetSdrClientApp.Messages;
 
 namespace NetSdrClientApp.Networking
 {
@@ -24,6 +25,7 @@ namespace NetSdrClientApp.Networking
 
         public TcpClientWrapper(string host, int port)
         {
+            var samples = NetSdrMessageHelper.GetSamples(16, []);
             _host = host;
             _port = port;
         }
