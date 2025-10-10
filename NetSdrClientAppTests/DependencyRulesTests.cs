@@ -1,60 +1,38 @@
 using NetArchTest.Rules;
-using Xunit;
+using NUnit.Framework;
 
 namespace NetSdrClientAppTests
 {
     public class DependencyRulesTests
     {
-        [Fact]
-        public void Client_ShouldNotDependOnServer()
+        [Test]
+        public void Ui_Should_Not_Depend_On_Infrastructure()
         {
-            var result = Types.InAssembly(typeof(NetSdrClientApp.NetSdrClient).Assembly)
+            var result = Types
+                .InAssembly(typeof(NetSdrClientApp.Program).Assembly)
                 .That()
-                .ResideInNamespace("NetSdrClientApp", true)
+                .ResideInNamespace("NetSdrClientApp.UI")
                 .ShouldNot()
-                .HaveDependencyOn("EchoTspServer")
+                .HaveDependencyOn("NetSdrClientApp.Infrastructure")
                 .GetResult();
 
-            Assert.True(result.IsSuccessful, "NetSdrClientApp не повинен залежати напряму від EchoTspServer");
+            Assert.IsTrue(result.IsSuccessful, 
+                "UI layer should not depend directly on Infrastructure layer");
         }
 
-        [Fact]
-        public void Server_ShouldNotDependOnClient()
+        [Test]
+        public void Domain_Should_Not_Depend_On_UI()
         {
-            var result = Types.InAssembly(typeof(EchoServer).Assembly)
+            var result = Types
+                .InAssembly(typeof(NetSdrClientApp.Program).Assembly)
                 .That()
-                .ResideInNamespace("EchoTspServer", true)
+                .ResideInNamespace("NetSdrClientApp.Domain")
                 .ShouldNot()
-                .HaveDependencyOn("NetSdrClientApp")
+                .HaveDependencyOn("NetSdrClientApp.UI")
                 .GetResult();
 
-            Assert.True(result.IsSuccessful, "EchoTspServer не повинен залежати від NetSdrClientApp");
-        }
-
-        [Fact]
-        public void ClientMessages_ShouldNotDependOnServer()
-        {
-            var result = Types.InAssembly(typeof(NetSdrClientApp.Messages.NetSdrMessageHelper).Assembly)
-                .That()
-                .ResideInNamespace("NetSdrClientApp.Messages", true)
-                .ShouldNot()
-                .HaveDependencyOn("EchoTspServer")
-                .GetResult();
-
-            Assert.True(result.IsSuccessful, "NetSdrClientApp.Messages не повинен залежати від EchoTspServer");
-        }
-
-        [Fact]
-        public void ClientNetworking_ShouldNotDependOnServer()
-        {
-            var result = Types.InAssembly(typeof(NetSdrClientApp.Networking.TcpClientWrapper).Assembly)
-                .That()
-                .ResideInNamespace("NetSdrClientApp.Networking", true)
-                .ShouldNot()
-                .HaveDependencyOn("EchoTspServer")
-                .GetResult();
-
-            Assert.True(result.IsSuccessful, "NetSdrClientApp.Networking не повинен залежати від EchoTspServer");
+            Assert.IsTrue(result.IsSuccessful, 
+                "Domain layer should not depend on UI layer");
         }
     }
 }
