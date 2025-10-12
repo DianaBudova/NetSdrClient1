@@ -59,7 +59,7 @@ jobs:
           /k:"DianaBudova_NetSdrClient1" `
           /o:"dianabudova" `
           /d:sonar.token="${{ secrets.SONAR_TOKEN }}" `
-          /d:sonar.cs.opencover.reportsPaths="**/TestResults/**/coverage.opencover.xml" `
+          /d:sonar.cs.opencover.reportsPaths="TestResults/coverage.opencover.xml" `
           /d:sonar.cpd.cs.minimumTokens=40 `
           /d:sonar.cpd.cs.minimumLines=5 `
           /d:sonar.exclusions=**/bin/**,**/obj/**,**/sonarcloud.yml `
@@ -75,8 +75,12 @@ jobs:
           dotnet test NetSdrClient.sln `
             --configuration Release `
             --no-build `
-            --collect:"XPlat Code Coverage" `
-            --results-directory "TestResults"
+            /p:CollectCoverage=true `
+            /p:CoverletOutputFormat=opencover `
+            /p:CoverletOutput=TestResults/coverage.opencover.xml
+        shell: pwsh
+      - name: Show coverage files
+        run: Get-ChildItem -Recurse TestResults
         shell: pwsh
       # 3) END: SonarScanner
       - name: SonarScanner End
