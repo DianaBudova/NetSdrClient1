@@ -1,82 +1,41 @@
-using EchoTspServer.Abstractions;
+using EchoTspServer.Wrappers;
+using System.Net;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
-namespace EchoTspServer;
-
-public class EchoServer
+namespace EchoTspServer
 {
-    private readonly ITcpListener _listener;
-    private readonly ILogger _logger;
-    private CancellationTokenSource _cancellationTokenSource;
-
-    public EchoServer(ITcpListener listener, ILogger logger)
+    public class Program
     {
-        _listener = listener;
-        _logger = logger;
-        _cancellationTokenSource = new CancellationTokenSource();
-    }
-
-    public async Task StartAsync()
-    {
-        _listener.Start();
-        _logger.Log("Server started.");
-
-        while (!_cancellationTokenSource.Token.IsCancellationRequested)
+        public static async Task Main(string[] args)
         {
-            try
-            {
-                ITcpClient client = await _listener.AcceptTcpClientAsync();
-                _logger.Log("Client connected.");
+            int serverPort = 5000;
 
-                _ = Task.Run(() => HandleClientAsync(client, _cancellationTokenSource.Token));
-            }
-            catch (Exception ex) when (ex is ObjectDisposedException || ex is OperationCanceledException)
-            {
-                // Listener has been closed or operation was cancelled
-                break;
-            }
-        }
-        _logger.Log("Server shutdown.");
-    }
+            var logger = new ConsoleLogger();
+            var listener = new TcpListenerWrapper(IPAddress.Any, serverPort);
 
-    public async Task HandleClientAsync(ITcpClient client, CancellationToken token)
-    {
-        using (client)
-        using (INetworkStream stream = client.GetStream())
-        {
-            try
-            {
-                byte[] buffer = new byte[8192];
-                int bytesRead;
+            var server = new EchoServer(listener, logger);
 
-                while (!token.IsCancellationRequested && (bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, token)) > 0)
+            _ = Task.Run(() => server.StartAsync());
+
+            string host = "127.0.0.1";
+            int udpPort = 60000;
+            int intervalMilliseconds = 5000;
+
+            using (var sender = new UdpTimedSender(host, udpPort))
+            {
+                logger.Log("Press 'q' to stop the server and sender...");
+                sender.StartSending(intervalMilliseconds);
+
+                while (Console.ReadKey(intercept: true).Key != ConsoleKey.Q)
                 {
-                    await stream.WriteAsync(buffer, 0, bytesRead, token);
-                    _logger.Log($"Echoed {bytesRead} bytes to the client.");
+                    // Just wait until 'q' is pressed
                 }
-            }
-            catch (Exception ex) when (!(ex is OperationCanceledException))
-            {
-                _logger.Log($"Error: {ex.Message}");
-            }
-            finally
-            {
-                client.Close();
-                _logger.Log("Client disconnected.");
-            }
-        }
-    }
 
-    public void Stop()
-    {
-        if (!_cancellationTokenSource.IsCancellationRequested)
-        {
-            _cancellationTokenSource.Cancel();
+                sender.StopSending();
+                server.Stop();
+                logger.Log("Sender and server stopped.");
+            }
         }
-        _listener.Stop();
-        _cancellationTokenSource.Dispose();
-        _logger.Log("Server stopped.");
     }
 }
