@@ -1,4 +1,4 @@
-namespace EchoTspServer.Abstractions
+namespace EchoServer.Abstractions
 {
     public interface ILogger
     {

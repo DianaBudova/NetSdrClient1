@@ -1,9 +1,9 @@
-using EchoTspServer.Abstractions;
+using EchoServer.Abstractions;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
-namespace EchoTspServer.Wrappers
+namespace EchoServer.Wrappers
 {
     public class TcpListenerWrapper : ITcpListener
     {

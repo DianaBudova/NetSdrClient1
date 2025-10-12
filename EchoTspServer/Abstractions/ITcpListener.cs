@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace EchoTspServer.Abstractions
+namespace EchoServer.Abstractions
 {
     public interface ITcpListener
     {

@@ -1,7 +1,7 @@
-using EchoTspServer.Abstractions;
+using EchoServer.Abstractions;
 using System.Net.Sockets;
 
-namespace EchoTspServer.Wrappers
+namespace EchoServer.Wrappers
 {
     public class TcpClientWrapper : ITcpClient
     {

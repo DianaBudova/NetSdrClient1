@@ -1,6 +1,6 @@
 using System;
 
-namespace EchoTspServer.Abstractions
+namespace EchoServer.Abstractions
 {
     public interface ITcpClient : IDisposable
     {

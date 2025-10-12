@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EchoTspServer;
+namespace EchoServer;
 
 public class UdpTimedSender : IDisposable
 {

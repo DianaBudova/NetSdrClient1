@@ -1,9 +1,10 @@
-using EchoTspServer.Wrappers;
+using EchoServer.Wrappers;
 using System.Net;
 using System;
 using System.Threading.Tasks;
+using EchoServer;
 
-namespace EchoTspServer
+namespace EchoServer
 {
     public class Program
     {

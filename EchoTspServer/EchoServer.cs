@@ -1,9 +1,9 @@
-using EchoTspServer.Abstractions;
+using EchoServer.Abstractions;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EchoTspServer;
+namespace EchoServer;
 
 public class EchoServer
 {
