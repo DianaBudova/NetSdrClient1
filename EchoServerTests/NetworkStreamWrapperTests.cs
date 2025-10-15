@@ -35,14 +35,14 @@ namespace EchoServerTests
             _serverStream = serverClient.GetStream();
         }
 
-        [TearDown]
-        public void TearDown()
-        {
-            _clientStreamWrapper.Dispose();
-            _serverStream.Dispose();
-            _client.Dispose();
-            _listener.Stop();
-        }
+        //[TearDown]
+        //public void TearDown()
+        //{
+        //    _clientStreamWrapper.Dispose();
+        //    _serverStream.Dispose();
+        //    _client.Dispose();
+        //    _listener.Stop();
+        //}
 
         [Test]
         public async Task WriteAsync_ShouldSendDataToServer()

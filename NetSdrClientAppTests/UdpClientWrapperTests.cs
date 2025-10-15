@@ -24,12 +24,12 @@ namespace NetSdrClientAppTests
             _udpWrapper = new UdpClientWrapper(_port);
         }
 
-        [TearDown]
-        public void TearDown()
-        {
-            _udpWrapper.Dispose();
-            _udpTemp.Dispose(); // <-- Dispose в TearDown
-        }
+        //[TearDown]
+        //public void TearDown()
+        //{
+        //    _udpWrapper.Dispose();
+        //    _udpTemp.Dispose(); // <-- Dispose в TearDown
+        //}
 
         [Test]
         public void Equals_ShouldReturnTrue_ForSameEndPoint()
