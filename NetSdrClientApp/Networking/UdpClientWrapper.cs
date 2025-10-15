@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace NetSdrClientApp.Networking
 {
-    public class UdpClientWrapper : IUdpClient
+    public class UdpClientWrapper : IUdpClient, IDisposable, IAsyncDisposable
     {
         private readonly IPEndPoint _localEndPoint;
         private CancellationTokenSource? _cts;
@@ -23,6 +23,7 @@ namespace NetSdrClientApp.Networking
     
         public async Task StartListeningAsync()
         {
+            _cts?.Dispose();
             _cts = new CancellationTokenSource();
             Console.WriteLine("Start listening for UDP messages...");
     
@@ -88,6 +89,40 @@ namespace NetSdrClientApp.Networking
             {
                 Console.WriteLine($"Error while stopping: {ex.Message}");
             }
+        }
+
+        public void Dispose()
+        {
+            StopInternal();
+        
+            try
+            {
+                _udpClient?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error while disposing _udpClient: {ex.Message}");
+            }
+        
+            try
+            {
+                _cts?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error while disposing _cts: {ex.Message}");
+            }
+        
+            _udpClient = null;
+            _cts = null;
+        
+            GC.SuppressFinalize(this);
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            Dispose();
+            return ValueTask.CompletedTask;
         }
     }
 }
