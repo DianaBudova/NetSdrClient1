@@ -13,13 +13,12 @@ namespace NetSdrClientAppTests
     {
         private UdpClientWrapper _udpWrapper = null!;
         private int _port;
-        private UdpClient _udpTemp = null!; // Disposable ресурс для визначення порту
 
         [SetUp]
         public void Setup()
         {
-            _udpTemp = new UdpClient(0);
-            _port = ((IPEndPoint)_udpTemp.Client.LocalEndPoint!).Port;
+            using var udpTemp = new UdpClient(0);
+            _port = ((IPEndPoint)udpTemp.Client.LocalEndPoint!).Port;
 
             _udpWrapper = new UdpClientWrapper(_port);
         }
@@ -28,7 +27,6 @@ namespace NetSdrClientAppTests
         public void TearDown()
         {
             _udpWrapper.Dispose();
-            _udpTemp.Dispose();
         }
 
         [Test]
@@ -43,6 +41,33 @@ namespace NetSdrClientAppTests
         {
             int hash = _udpWrapper.GetHashCode();
             Assert.That(hash, Is.TypeOf<int>());
+        }
+
+        [Test]
+        public async Task StartListeningAsync_ShouldRaiseMessageReceived_WhenUdpPacketArrives()
+        {
+            // Arrange
+            byte[] received = null!;
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+            _udpWrapper.MessageReceived += (s, data) => received = data;
+
+            // Act
+            var listeningTask = _udpWrapper.StartListeningAsync();
+
+            using var sender = new UdpClient();
+            byte[] payload = Encoding.UTF8.GetBytes("TestMessage");
+            await sender.SendAsync(payload, payload.Length, "127.0.0.1", _port);
+
+            while (received == null && !cts.Token.IsCancellationRequested)
+                await Task.Delay(10);
+
+            _udpWrapper.StopListening();
+
+            await listeningTask;
+
+            // Assert
+            Assert.That(received, Is.Not.Null, "MessageReceived was not raised");
+            Assert.That(Encoding.UTF8.GetString(received), Is.EqualTo("TestMessage"));
         }
 
         [Test]
