@@ -142,7 +142,7 @@ namespace NetSdrClientApp.Networking
         }
         private void ThrowIfDisposed()
         {
-            if (_disposed) throw new ObjectDisposedException(nameof(UdpClientWrapper));
+            ObjectDisposedException.ThrowIf(_disposed, nameof(UdpClientWrapper));
         }
     }
 }
