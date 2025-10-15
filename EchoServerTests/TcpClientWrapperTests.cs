@@ -24,7 +24,8 @@ namespace EchoServerTests
         [TearDown]
         public void TearDown()
         {
-            _wrapper.Dispose();
+            _tcpClient?.Dispose();
+            _wrapper?.Dispose();
         }
 
         [Test]
