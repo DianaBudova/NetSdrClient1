@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
@@ -13,34 +13,46 @@ namespace NetSdrClientApp.Networking
         private readonly IPEndPoint _localEndPoint;
         private CancellationTokenSource? _cts;
         private UdpClient? _udpClient;
-    
+        private bool _disposed;
+        private readonly object _sync = new();
+
         public event EventHandler<byte[]>? MessageReceived;
-    
+
         public UdpClientWrapper(int port)
         {
             _localEndPoint = new IPEndPoint(IPAddress.Any, port);
         }
-    
+
         public async Task StartListeningAsync()
         {
-            _cts?.Dispose();
-            _cts = new CancellationTokenSource();
+            ThrowIfDisposed();
+
+            lock (_sync)
+            {
+                _cts?.Dispose();
+                _cts = new CancellationTokenSource();
+
+                _udpClient?.Dispose();
+                _udpClient = new UdpClient(_localEndPoint);
+            }
+
             Console.WriteLine("Start listening for UDP messages...");
-    
+
             try
             {
-                _udpClient = new UdpClient(_localEndPoint);
                 while (!_cts.Token.IsCancellationRequested)
                 {
-                    UdpReceiveResult result = await _udpClient.ReceiveAsync(_cts.Token);
+                    UdpReceiveResult result = await _udpClient!.ReceiveAsync(_cts.Token).ConfigureAwait(false);
                     MessageReceived?.Invoke(this, result.Buffer);
-    
+
                     Console.WriteLine($"Received from {result.RemoteEndPoint}");
                 }
             }
-            catch (OperationCanceledException ex)
+            catch (OperationCanceledException)
             {
-                //empty
+            }
+            catch (ObjectDisposedException)
+            {
             }
             catch (Exception ex)
             {
@@ -61,10 +73,8 @@ namespace NetSdrClientApp.Networking
         public override int GetHashCode()
         {
             var payload = $"{nameof(UdpClientWrapper)}|{_localEndPoint.Address}|{_localEndPoint.Port}";
-
             using var md5 = MD5.Create();
             var hash = md5.ComputeHash(Encoding.UTF8.GetBytes(payload));
-
             return BitConverter.ToInt32(hash, 0);
         }
 
@@ -72,57 +82,91 @@ namespace NetSdrClientApp.Networking
         {
             if (ReferenceEquals(this, obj)) return true;
             if (obj is not UdpClientWrapper other) return false;
-
             return _localEndPoint.Address.Equals(other._localEndPoint.Address)
                    && _localEndPoint.Port == other._localEndPoint.Port;
         }
 
         private void StopInternal()
         {
-            try
+            lock (_sync)
             {
-                _cts?.Cancel();
-                _udpClient?.Close();
-                Console.WriteLine("Stopped listening for UDP messages.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error while stopping: {ex.Message}");
+                try
+                {
+                    _cts?.Cancel();
+                    try { _udpClient?.Close(); } catch { /* swallow */ }
+
+                    Console.WriteLine("Stopped listening for UDP messages.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error while stopping: {ex.Message}");
+                }
             }
         }
 
         public void Dispose()
         {
-            StopInternal();
-        
-            try
-            {
-                _udpClient?.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error while disposing _udpClient: {ex.Message}");
-            }
-        
-            try
-            {
-                _cts?.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error while disposing _cts: {ex.Message}");
-            }
-        
-            _udpClient = null;
-            _cts = null;
-        
+            Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
 
-        public ValueTask DisposeAsync()
+        protected virtual void Dispose(bool disposing)
         {
-            Dispose();
+            if (_disposed) return;
+
+            if (disposing)
+            {
+                StopInternal();
+
+                lock (_sync)
+                {
+                    try
+                    {
+                        _udpClient?.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error while disposing _udpClient: {ex.Message}");
+                    }
+
+                    try
+                    {
+                        _cts?.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error while disposing _cts: {ex.Message}");
+                    }
+
+                    _udpClient = null;
+                    _cts = null;
+                }
+            }
+
+            _disposed = true;
+        }
+
+        ~UdpClientWrapper()
+        {
+            Dispose(disposing: false);
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await DisposeAsyncCore().ConfigureAwait(false);
+
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual ValueTask DisposeAsyncCore()
+        {
             return ValueTask.CompletedTask;
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed) throw new ObjectDisposedException(nameof(UdpClientWrapper));
         }
     }
 }
