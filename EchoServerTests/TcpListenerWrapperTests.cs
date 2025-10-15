@@ -1,11 +1,13 @@
 using NUnit.Framework;
 using EchoServer.Wrappers;
+using EchoServer.Abstractions;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using System.Text;
+using System.Threading;
 
-namespace EchoServerTests
+namespace EchoServer.Tests
 {
     [TestFixture]
     public class TcpListenerWrapperTests
@@ -32,33 +34,34 @@ namespace EchoServerTests
         [Test]
         public async Task AcceptTcpClientAsync_ShouldReturnClient_WhenClientConnects()
         {
+            // Arrange
             var acceptTask = _listenerWrapper.AcceptTcpClientAsync();
 
             using var client = new TcpClient();
             await client.ConnectAsync(IPAddress.Loopback, _port);
 
-            var wrapperClient = await acceptTask;
+            ITcpClient wrapperClient = await acceptTask;
 
-            // Assert
-            Assert.IsNotNull(wrapperClient);
-            Assert.IsInstanceOf<ITcpClient>(wrapperClient);
+            Assert.That(wrapperClient, Is.Not.Null);
+            Assert.That(wrapperClient, Is.InstanceOf<ITcpClient>());
 
             var stream = wrapperClient.GetStream();
             byte[] buffer = Encoding.UTF8.GetBytes("Hello");
-            await stream.WriteAsync(buffer, 0, buffer.Length);
-            Assert.AreEqual(5, buffer.Length);
+            await stream.WriteAsync(buffer, 0, buffer.Length, CancellationToken.None);
+
+            Assert.That(buffer.Length, Is.EqualTo(5));
         }
 
         [Test]
-        public void Start_ShouldStartListener()
+        public void Start_ShouldStartListener_WithoutException()
         {
-            Assert.DoesNotThrow(() => _listenerWrapper.Start());
+            Assert.That(() => _listenerWrapper.Start(), Throws.Nothing);
         }
 
         [Test]
-        public void Stop_ShouldStopListener()
+        public void Stop_ShouldStopListener_WithoutException()
         {
-            Assert.DoesNotThrow(() => _listenerWrapper.Stop());
+            Assert.That(() => _listenerWrapper.Stop(), Throws.Nothing);
         }
     }
 }
