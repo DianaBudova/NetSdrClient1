@@ -21,8 +21,8 @@ namespace EchoServerTests
             _listenerWrapper = new TcpListenerWrapper(IPAddress.Loopback, 0);
             _listenerWrapper.Start();
 
-            var localEndPoint = (_listenerWrapper as dynamic)._listener.LocalEndpoint as IPEndPoint;
-            _port = localEndPoint.Port;
+            var localEndPoint = _listenerWrapper.InnerListener.LocalEndpoint as IPEndPoint;
+            _port = localEndPoint!.Port;
         }
 
         [TearDown]
@@ -37,11 +37,13 @@ namespace EchoServerTests
             // Arrange
             var acceptTask = _listenerWrapper.AcceptTcpClientAsync();
 
+            // Act
             using var client = new TcpClient();
             await client.ConnectAsync(IPAddress.Loopback, _port);
 
             ITcpClient wrapperClient = await acceptTask;
 
+            // Assert
             Assert.That(wrapperClient, Is.Not.Null);
             Assert.That(wrapperClient, Is.InstanceOf<ITcpClient>());
 

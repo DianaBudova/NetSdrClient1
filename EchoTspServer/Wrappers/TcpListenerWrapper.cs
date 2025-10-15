@@ -14,6 +14,8 @@ namespace EchoServer.Wrappers
             _listener = new TcpListener(address, port);
         }
 
+        public TcpListener InnerListener => _listener;
+
         public async Task<ITcpClient> AcceptTcpClientAsync()
         {
             var tcpClient = await _listener.AcceptTcpClientAsync();
