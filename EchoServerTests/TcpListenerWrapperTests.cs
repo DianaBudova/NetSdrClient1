@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Text;
 using System.Threading;
 
-namespace EchoServer.Tests
+namespace EchoServerTests
 {
     [TestFixture]
     public class TcpListenerWrapperTests
