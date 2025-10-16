@@ -75,7 +75,7 @@ namespace NetSdrClientApp.Networking
             return _localEndPoint.Address.Equals(other._localEndPoint.Address)
                    && _localEndPoint.Port == other._localEndPoint.Port;
         }
-        private void StopInternal()
+        protected virtual void StopInternal()
         {
             lock (_sync)
             {
