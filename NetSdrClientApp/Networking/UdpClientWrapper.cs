@@ -55,11 +55,25 @@ namespace NetSdrClientApp.Networking
         }
         public void StopListening()
         {
-            StopInternal();
+            try
+            {
+                StopInternal();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in StopListening: {ex.Message}");
+            }
         }
         public void Exit()
         {
-            StopInternal();
+            try
+            {
+                StopInternal();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in Exit: {ex.Message}");
+            }
         }
         public override int GetHashCode()
         {
@@ -101,7 +115,15 @@ namespace NetSdrClientApp.Networking
             if (_disposed) return;
             if (disposing)
             {
-                StopInternal();
+                try
+                {
+                    StopInternal();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error while stopping: {ex.Message}");
+                }
+
                 lock (_sync)
                 {
                     try
@@ -132,7 +154,15 @@ namespace NetSdrClientApp.Networking
         }
         public async ValueTask DisposeAsync()
         {
-            await DisposeAsyncCore().ConfigureAwait(false);
+            try
+            {
+                await DisposeAsyncCore().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in DisposeAsyncCore: {ex.Message}");
+            }
+
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
