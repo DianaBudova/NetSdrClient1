@@ -78,9 +78,13 @@ namespace NetSdrClientApp.Networking
         public override int GetHashCode()
         {
             var payload = $"{nameof(UdpClientWrapper)}|{_localEndPoint.Address}|{_localEndPoint.Port}";
-            using var md5 = MD5.Create();
-            var hash = md5.ComputeHash(Encoding.UTF8.GetBytes(payload));
-            return BitConverter.ToInt32(hash, 0);
+            
+            // Use a strong hash algorithm
+            using var sha256 = SHA256.Create();
+            var hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(payload));
+            
+            // Convert first 4 bytes to int for GetHashCode
+            return BitConverter.ToInt32(hashBytes, 0);
         }
         public override bool Equals(object? obj)
         {
