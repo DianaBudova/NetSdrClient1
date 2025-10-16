@@ -43,15 +43,22 @@ namespace NetSdrClientAppTests
                 {
                     try
                     {
-                        // Stop the listener and dispose underlying socket to satisfy analyzers
+                        // Stop listener if running
                         _server.Stop();
                     }
                     catch { /* ignore */ }
 
                     try
                     {
-                        // TcpListener does not implement IDisposable, but its Server (Socket) does.
-                        // Dispose the underlying socket to ensure native resources are released.
+                        // If TcpListener exposes Dispose on the target framework, call it to satisfy analyzers.
+                        // Use a cast to IDisposable to be safe across frameworks.
+                        (_server as IDisposable)?.Dispose();
+                    }
+                    catch { /* ignore */ }
+
+                    try
+                    {
+                        // Also dispose underlying socket to ensure native resources are released.
                         _server.Server.Dispose();
                     }
                     catch { /* ignore */ }
