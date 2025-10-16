@@ -83,5 +83,31 @@ namespace EchoServerTests
             _mockLogger.Verify(log => log.Log("Server started."), Times.Once);
             _mockLogger.Verify(log => log.Log("Server shutdown."), Times.Once);
         }
+
+        [Test]
+        public async Task HandleClientAsync_ShouldEchoBytesAndLogMessage()
+        {
+            // Arrange
+            var mockClient = new Mock<ITcpClient>();
+            var mockStream = new Mock<INetworkStream>();
+            mockClient.Setup(c => c.GetStream()).Returns(mockStream.Object);
+
+            byte[] buffer = new byte[8192]; // як у методі
+            int bytesRead = 5;
+
+            // Повертаємо кілька байт на перше зчитування, 0 на друге для завершення
+            mockStream.SetupSequence(s => s.ReadAsync(It.IsAny<byte[]>(), 0, It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                      .ReturnsAsync(bytesRead)
+                      .ReturnsAsync(0);
+
+            // Act
+            await _server.HandleClientAsync(mockClient.Object, CancellationToken.None);
+
+            // Assert
+            mockStream.Verify(s => s.WriteAsync(It.Is<byte[]>(b => b.Length == 8192), 0, bytesRead, It.IsAny<CancellationToken>()), Times.Once);
+            _mockLogger.Verify(log => log.Log($"Echoed {bytesRead} bytes to the client."), Times.Once);
+            mockClient.Verify(c => c.Close(), Times.Once);
+            _mockLogger.Verify(log => log.Log("Client disconnected."), Times.Once);
+        }
     }
 }

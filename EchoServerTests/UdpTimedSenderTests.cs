@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -165,13 +164,10 @@ namespace EchoServerTests
             }
         }
 
-        // --------------------------
-        // Покриття catch-блоку SendMessageCallback
-        // --------------------------
         [Test]
-        public void SendMessageCallback_ExceptionIsHandled_WritesErrorToConsole()
+        public async Task SendMessageCallback_ExceptionIsHandled_WritesErrorToConsole()
         {
-            // Arrange: invalid host to force exception inside callback
+            // Arrange: invalid host to force IPAddress.Parse or Send to fail inside the callback
             _sender = new UdpTimedSender("not-an-ip", _port);
 
             var originalOut = Console.Out;
@@ -180,22 +176,24 @@ namespace EchoServerTests
                 using var sw = new StringWriter();
                 Console.SetOut(sw);
 
-                // Виклик callback напряму через reflection
-                var method = typeof(UdpTimedSender)
-                    .GetMethod("SendMessageCallback", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                // Act: start sender - timer uses dueTime=0, so callback runs immediately (or very soon)
+                _sender.StartSending(50);
 
-                Assert.That(method, Is.Not.Null, "SendMessageCallback method not found");
+                // give callback some time to run and handle exception
+                await Task.Delay(300).ConfigureAwait(false);
 
-                method.Invoke(_sender, new object?[] { null });
-
+                // capture console output
                 var output = sw.ToString();
 
+                // Assert: catch block wrote error message to console
                 Assert.That(output, Does.Contain("Error sending message").IgnoreCase,
                     "Expected catch block to write 'Error sending message' to Console output when exception occurs.");
             }
             finally
             {
-                _sender?.Dispose();
+                // cleanup
+                try { _sender?.StopSending(); } catch { }
+                try { _sender?.Dispose(); } catch { }
                 _sender = null;
                 Console.SetOut(originalOut);
             }
