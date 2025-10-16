@@ -10,6 +10,8 @@ public class NetSdrClientTests
     Mock<ITcpClient> _tcpMock;
     Mock<IUdpClient> _updMock;
 
+    private const string SamplesFile = "samples.bin";
+
     public NetSdrClientTests() { }
 
     [SetUp]
