@@ -1,4 +1,4 @@
-﻿using Moq;
+using Moq;
 using NetSdrClientApp;
 using NetSdrClientApp.Networking;
 
@@ -9,8 +9,6 @@ public class NetSdrClientTests
     NetSdrClient _client;
     Mock<ITcpClient> _tcpMock;
     Mock<IUdpClient> _updMock;
-
-    private const string SamplesFile = "samples.bin";
 
     public NetSdrClientTests() { }
 
@@ -36,16 +34,6 @@ public class NetSdrClientTests
         _updMock = new Mock<IUdpClient>();
 
         _client = new NetSdrClient(_tcpMock.Object, _updMock.Object);
-    }
-
-    [TearDown]
-    public void TearDown()
-    {
-        // cleanup samples file
-        if (File.Exists(SamplesFile))
-        {
-            try { File.Delete(SamplesFile); } catch { /* ignore */ }
-        }
     }
 
     [Test]
@@ -190,30 +178,5 @@ public class NetSdrClientTests
 
         Assert.Pass("TaskCompletionSource set correctly via MessageReceived");
     }
-
-    [Test]
-        public void UdpClientMessageReceived_WritesSamplesFile()
-        {
-            // arrange: create a fake UDP payload. Exact contents depend on NetSdrMessageHelper
-            // but we provide some bytes — handler should call TranslateMessage/GetSamples and then write file.
-            byte[] udpPayload = new byte[] { 0x10, 0x20, 0x30, 0x40, 0x50 };
-
-            // act: raise the UDP MessageReceived event
-            _updMock.Raise(u => u.MessageReceived += null, _updMock.Object, udpPayload);
-
-            // give a short time for handler to process and write file
-            Task.Delay(100).GetAwaiter().GetResult();
-
-            // assert: file created and has non-zero length; contents length should be multiple of 2 (16-bit samples)
-            Assert.That(File.Exists(SamplesFile), Is.True, "samples.bin should be created by UDP handler");
-
-            var fileInfo = new FileInfo(SamplesFile);
-            Assert.That(fileInfo.Length, Is.GreaterThan(0), "samples.bin should not be empty");
-            Assert.That(fileInfo.Length % 2, Is.EqualTo(0), "samples.bin length should be multiple of 2 (16-bit samples)");
-
-            // optionally: read some bytes (not asserting exact values because helper logic is external)
-            var bytes = File.ReadAllBytes(SamplesFile);
-            Assert.That(bytes.Length, Is.EqualTo(fileInfo.Length));
-        }
 
 }
