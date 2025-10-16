@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -60,7 +61,7 @@ namespace EchoServerTests
 
                 var received = await ReceiveWithTimeoutAsync(_listener!, ReceiveTimeoutMs);
                 Assert.That(received, Is.Not.Null, "No UDP message received within timeout.");
-            
+
                 var data = received!.Value.Buffer;
                 Assert.Multiple(() =>
                 {
@@ -164,36 +165,37 @@ namespace EchoServerTests
             }
         }
 
+        // --------------------------
+        // Покриття catch-блоку SendMessageCallback
+        // --------------------------
         [Test]
-        public async Task SendMessageCallback_ExceptionIsHandled_WritesErrorToConsole()
+        public void SendMessageCallback_ExceptionIsHandled_WritesErrorToConsole()
         {
-            // Arrange: invalid host to force IPAddress.Parse or Send to fail inside the callback
+            // Arrange: invalid host to force exception inside callback
             _sender = new UdpTimedSender("not-an-ip", _port);
-        
+
             var originalOut = Console.Out;
             try
             {
                 using var sw = new StringWriter();
                 Console.SetOut(sw);
-        
-                // Act: start sender - timer uses dueTime=0, so callback runs immediately (or very soon)
-                _sender.StartSending(50);
-        
-                // give callback some time to run and handle exception
-                await Task.Delay(300).ConfigureAwait(false);
-        
-                // capture console output
+
+                // Виклик callback напряму через reflection
+                var method = typeof(UdpTimedSender)
+                    .GetMethod("SendMessageCallback", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+                Assert.That(method, Is.Not.Null, "SendMessageCallback method not found");
+
+                method.Invoke(_sender, new object?[] { null });
+
                 var output = sw.ToString();
-        
-                // Assert: catch block wrote error message to console
+
                 Assert.That(output, Does.Contain("Error sending message").IgnoreCase,
                     "Expected catch block to write 'Error sending message' to Console output when exception occurs.");
             }
             finally
             {
-                // cleanup
-                try { _sender?.StopSending(); } catch { }
-                try { _sender?.Dispose(); } catch { }
+                _sender?.Dispose();
                 _sender = null;
                 Console.SetOut(originalOut);
             }
