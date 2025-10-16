@@ -163,5 +163,40 @@ namespace EchoServerTests
                 _sender = null;
             }
         }
+
+        [Test]
+        public async Task SendMessageCallback_ExceptionIsHandled_WritesErrorToConsole()
+        {
+            // Arrange: invalid host to force IPAddress.Parse or Send to fail inside the callback
+            _sender = new UdpTimedSender("not-an-ip", _port);
+        
+            var originalOut = Console.Out;
+            try
+            {
+                using var sw = new StringWriter();
+                Console.SetOut(sw);
+        
+                // Act: start sender - timer uses dueTime=0, so callback runs immediately (or very soon)
+                _sender.StartSending(50);
+        
+                // give callback some time to run and handle exception
+                await Task.Delay(300).ConfigureAwait(false);
+        
+                // capture console output
+                var output = sw.ToString();
+        
+                // Assert: catch block wrote error message to console
+                Assert.That(output, Does.Contain("Error sending message").IgnoreCase,
+                    "Expected catch block to write 'Error sending message' to Console output when exception occurs.");
+            }
+            finally
+            {
+                // cleanup
+                try { _sender?.StopSending(); } catch { }
+                try { _sender?.Dispose(); } catch { }
+                _sender = null;
+                Console.SetOut(originalOut);
+            }
+        }
     }
 }
