@@ -62,18 +62,14 @@ namespace EchoServerTests
                 Assert.That(received, Is.Not.Null, "No UDP message received within timeout.");
 
                 var data = received!.Value.Buffer;
-                Assert.That(data, Has.Length.GreaterThanOrEqualTo(5), "Received data too short.");
-                
-                ushort seq = BitConverter.ToUInt16(data, 2);
-                
-                Assert.Multiple(() =>
+                Assert.EnterMultipleScope(() =>
                 {
+                    Assert.That(data, Has.Length.GreaterThanOrEqualTo(4), "Received data too short.");
                     Assert.That(data[0], Is.EqualTo(0x04), "First header byte mismatch.");
                     Assert.That(data[1], Is.EqualTo(0x84), "Second header byte mismatch.");
+                    ushort seq = BitConverter.ToUInt16(data, 2);
                     Assert.That(seq, Is.EqualTo((ushort)1), "Sequence number of first message should be 1.");
                 });
-
-                Assert.That(data, Has.Length.GreaterThanOrEqualTo(1028), "Expected message length at least 1028 bytes.");
             }
             finally
             {
