@@ -7,14 +7,14 @@ using System.Threading.Tasks;
 using NetSdrClientApp.Networking;
 using NUnit.Framework;
 
-namespace NetSdrClientAppTests
+namespace NetSdrClientApp.Tests.Networking
 {
     [TestFixture]
     public class TcpClientWrapperTests
     {
         private TcpListener? _server;
         private int _port;
-        private CancellationTokenSource _serverCts = null!;
+        private CancellationTokenSource? _serverCts;
 
         [SetUp]
         public void SetUp()
@@ -31,12 +31,37 @@ namespace NetSdrClientAppTests
         {
             try
             {
-                _serverCts?.Cancel();
-                _server?.Stop();
+                // Cancel any running server work
+                if (_serverCts != null)
+                {
+                    try { _serverCts.Cancel(); } catch { /* ignore */ }
+                    _serverCts.Dispose();
+                    _serverCts = null;
+                }
+
+                if (_server != null)
+                {
+                    try
+                    {
+                        // Stop the listener and dispose underlying socket to satisfy analyzers
+                        _server.Stop();
+                    }
+                    catch { /* ignore */ }
+
+                    try
+                    {
+                        // TcpListener does not implement IDisposable, but its Server (Socket) does.
+                        // Dispose the underlying socket to ensure native resources are released.
+                        _server.Server.Dispose();
+                    }
+                    catch { /* ignore */ }
+
+                    _server = null;
+                }
             }
             catch
             {
-                // ignore cleanup exceptions
+                // ensure teardown never throws
             }
         }
 
@@ -53,7 +78,7 @@ namespace NetSdrClientAppTests
             var acceptTcs = new TaskCompletionSource<TcpClient>();
             var acceptTask = Task.Run(async () =>
             {
-                using var cts = CancellationTokenSource.CreateLinkedTokenSource(_serverCts.Token);
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(_serverCts!.Token);
                 cts.CancelAfter(TimeSpan.FromSeconds(5));
                 try
                 {
@@ -109,7 +134,7 @@ namespace NetSdrClientAppTests
 
             client.Connect();
 
-            var received = await Task.WhenAny(receivedTcs.Task, Task.Delay(2000)).ConfigureAwait(false);
+            var completed = await Task.WhenAny(receivedTcs.Task, Task.Delay(2000)).ConfigureAwait(false);
             Assert.That(receivedTcs.Task.IsCompleted, Is.True, "MessageReceived event should be triggered");
 
             var payload = receivedTcs.Task.Result;
