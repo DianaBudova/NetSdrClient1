@@ -96,5 +96,62 @@ namespace NetSdrClientAppTests
             Assert.That(() => _udpWrapper.GetHashCode(), Throws.Nothing);
             Assert.That(() => _udpWrapper.StartListeningAsync(), Throws.TypeOf<ObjectDisposedException>());
         }
+
+        private class FaultyUdpClientWrapper : UdpClientWrapper
+        {
+            public FaultyUdpClientWrapper(int port) : base(port) { }
+
+            protected override void StopInternal()
+            {
+                throw new InvalidOperationException("Stop failed");
+            }
+
+            protected override ValueTask DisposeAsyncCore()
+            {
+                throw new InvalidOperationException("DisposeAsyncCore failed");
+            }
+        }
+
+        [Test]
+        public void StartListeningAsync_ShouldCatchObjectDisposedException()
+        {
+            var wrapper = new UdpClientWrapper(0);
+            wrapper.Dispose();
+            Assert.That(async () => await wrapper.StartListeningAsync(), Throws.TypeOf<ObjectDisposedException>());
+        }
+
+        [Test]
+        public void StopInternal_Exception_ShouldBeHandled()
+        {
+            var wrapper = new FaultyUdpClientWrapper(0);
+            Assert.That(() => wrapper.StopListening(), Throws.Nothing, "StopInternal exception should be swallowed");
+        }
+
+        [Test]
+        public void Dispose_ExceptionDuringDispose_ShouldBeHandled()
+        {
+            var wrapper = new FaultyUdpClientWrapper(0);
+            Assert.That(() => wrapper.Dispose(), Throws.Nothing, "Dispose should swallow exceptions from StopInternal");
+        }
+
+        [Test]
+        public void Destructor_ShouldNotThrow()
+        {
+            void CreateAndRelease()
+            {
+                var wrapper = new UdpClientWrapper(0);
+            }
+            Assert.DoesNotThrow(() => CreateAndRelease());
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+
+        [Test]
+        public async Task DisposeAsync_Exception_ShouldBeHandled()
+        {
+            var wrapper = new FaultyUdpClientWrapper(0);
+            await using var _ = wrapper;
+            Assert.DoesNotThrowAsync(async () => await wrapper.DisposeAsync());
+        }
     }
 }
