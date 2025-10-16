@@ -9,7 +9,7 @@ public class EchoServer
 {
     private readonly ITcpListener _listener;
     private readonly ILogger _logger;
-    private CancellationTokenSource _cancellationTokenSource;
+    private readonly CancellationTokenSource _cancellationTokenSource;
 
     public EchoServer(ITcpListener listener, ILogger logger)
     {

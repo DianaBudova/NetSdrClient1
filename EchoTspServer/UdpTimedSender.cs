@@ -1,6 +1,7 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -36,9 +37,9 @@ public class UdpTimedSender : IDisposable
         try
         {
             //dummy data
-            Random rnd = new Random();
             byte[] samples = new byte[1024];
-            rnd.NextBytes(samples);
+            RandomNumberGenerator.Fill(samples);
+
             i++;
 
             byte[] msg = (new byte[] { 0x04, 0x84 }).Concat(BitConverter.GetBytes(i)).Concat(samples).ToArray();
