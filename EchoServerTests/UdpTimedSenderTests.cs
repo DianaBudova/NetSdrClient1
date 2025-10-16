@@ -60,9 +60,9 @@ namespace EchoServerTests
 
                 var received = await ReceiveWithTimeoutAsync(_listener!, ReceiveTimeoutMs);
                 Assert.That(received, Is.Not.Null, "No UDP message received within timeout.");
-
+            
                 var data = received!.Value.Buffer;
-                Assert.EnterMultipleScope(() =>
+                Assert.Multiple(() =>
                 {
                     Assert.That(data, Has.Length.GreaterThanOrEqualTo(4), "Received data too short.");
                     Assert.That(data[0], Is.EqualTo(0x04), "First header byte mismatch.");
